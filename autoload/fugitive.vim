@@ -7125,52 +7125,9 @@ function! s:BlameCommit(cmd, ...) abort
   let sigil = has_key(state, 'blame_reverse_end') ? '-' : '+'
   let mods = (s:BlameBufnr() < 0 ? '' : &splitbelow ? "botright " : "topleft ")
   let [commit, path, lnum] = s:BlameCommitFileLnum(line, state)
-  if empty(commit) && len(path) && has_key(state, 'blame_reverse_end')
-    let path = (len(state.blame_reverse_end) ? state.blame_reverse_end . ':' : ':(top)') . path
-    return fugitive#Open(mods . a:cmd, 0, '', '+' . lnum . ' ' . s:fnameescape(path), ['+' . lnum, path])
-  endif
-  if commit =~# '^0*$'
-    return 'echoerr ' . string('fugitive: no commit')
-  endif
-  if line =~# '^\^' && !has_key(state, 'blame_reverse_end')
-    let path = commit . ':' . path
-    return fugitive#Open(mods . a:cmd, 0, '', '+' . lnum . ' ' . s:fnameescape(path), ['+' . lnum, path])
-  endif
-  let cmd = fugitive#Open(mods . a:cmd, 0, '', commit, [commit])
-  if cmd =~# '^echoerr'
-    return cmd
-  endif
-  execute cmd
-  if a:cmd ==# 'pedit' || empty(path)
-    return ''
-  endif
-  if search('^diff .* b/\M'.escape(path,'\').'$','W')
-    call search('^+++')
-    let head = line('.')
-    while search('^@@ \|^diff ') && getline('.') =~# '^@@ '
-      let top = +matchstr(getline('.'),' ' . sigil .'\zs\d\+')
-      let len = +matchstr(getline('.'),' ' . sigil . '\d\+,\zs\d\+')
-      if lnum >= top && lnum <= top + len
-        let offset = lnum - top
-        if &scrolloff
-          +
-          normal! zt
-        else
-          normal! zt
-          +
-        endif
-        while offset > 0 && line('.') < line('$')
-          +
-          if getline('.') =~# '^[ ' . sigil . ']'
-            let offset -= 1
-          endif
-        endwhile
-        return 'normal! zv'
-      endif
-    endwhile
-    execute head
-    normal! zt
-  endif
+  echom commit
+  exe s:BlameLeave()
+  execute ':DiffviewOpen ' . commit . '~1..' . commit
   return ''
 endfunction
 
