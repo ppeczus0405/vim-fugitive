@@ -7175,9 +7175,17 @@ function! s:BlameCommit(cmd, ...) abort
   let sigil = has_key(state, 'blame_reverse_end') ? '-' : '+'
   let mods = (s:BlameBufnr() < 0 ? '' : &splitbelow ? "botright " : "topleft ")
   let [commit, path, lnum] = s:BlameCommitFileLnum(line, state)
-  echom commit
   exe s:BlameLeave()
-  execute ':DiffviewOpen ' . commit . '~1..' . commit
+
+  let parsedCommit = substitute(system('git rev-parse ' . commit), '\n\+$', '', '')
+  let initialCommit = substitute(system('git rev-list --max-parents=0 HEAD'), '\n\+$', '', '')
+  let emptyTreeCommit = substitute(system('git hash-object -t tree /dev/null'), '\n\+$', '', '')
+  let resultLeftSide = emptyTreeCommit
+  if parsedCommit != initialCommit
+    let resultLeftSide = parsedCommit . '~1'
+  endif
+
+  execute ':DiffviewOpen ' . resultLeftSide . '..' . parsedCommit
   return ''
 endfunction
 
